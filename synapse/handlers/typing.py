@@ -362,16 +362,11 @@ class TypingWriterHandler(FollowerTypingHandler):
             )
             return
 
-        domains = await self._storage_controllers.state.get_current_hosts_in_room(
-            room_id
-        )
-
-        if self.server_name in domains:
-            logger.info("Got typing update from %s: %r", user_id, content)
-            now = self.clock.time_msec()
-            self._member_typing_until[member] = now + FEDERATION_TIMEOUT
-            self.wheel_timer.insert(now=now, obj=member, then=now + FEDERATION_TIMEOUT)
-            self._push_update_local(member=member, typing=content["typing"])
+        logger.info("Got typing update from %s: %r", user_id, content)
+        now = self.clock.time_msec()
+        self._member_typing_until[member] = now + FEDERATION_TIMEOUT
+        self.wheel_timer.insert(now=now, obj=member, then=now + FEDERATION_TIMEOUT)
+        self._push_update_local(member=member, typing=content["typing"])
 
     def _push_update_local(self, member: RoomMember, typing: bool) -> None:
         room_set = self._room_typing.setdefault(member.room_id, set())
