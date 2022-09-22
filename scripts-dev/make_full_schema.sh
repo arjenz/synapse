@@ -240,13 +240,23 @@ DROP TABLE user_directory_search_stat;
 
 echo "Dumping SQLite3 schema..."
 
+cleanup_sqlite_schema() {
+  # Remove lines which are just comments, and end-of-line comments. Otherwise the python
+  # sqlite driver gets unhappy.
+  # Remove trailing spaces. Otherwise I get unhappy.
+  sed --regexp-extended \
+    -e '/^ *--+/d' \
+    -e 's/^(.*?) *--.*$/\1/' \
+    -e 's/ +$//'
+}
+
 mkdir -p "$OUTPUT_DIR/"{common,main,state}"/full_schemas/$SCHEMA_NUMBER"
-sqlite3 "$SQLITE_COMMON_DB" ".schema --indent"           > "$OUTPUT_DIR/common/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
-sqlite3 "$SQLITE_COMMON_DB" ".dump --data-only --nosys" >> "$OUTPUT_DIR/common/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
-sqlite3 "$SQLITE_MAIN_DB"   ".schema --indent"           > "$OUTPUT_DIR/main/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
-sqlite3 "$SQLITE_MAIN_DB"   ".dump --data-only --nosys" >> "$OUTPUT_DIR/main/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
-sqlite3 "$SQLITE_STATE_DB"  ".schema --indent"           > "$OUTPUT_DIR/state/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
-sqlite3 "$SQLITE_STATE_DB"  ".dump --data-only --nosys" >> "$OUTPUT_DIR/state/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
+sqlite3 "$SQLITE_COMMON_DB" ".schema --indent"          | cleanup_sqlite_schema  > "$OUTPUT_DIR/common/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
+sqlite3 "$SQLITE_COMMON_DB" ".dump --data-only --nosys" | cleanup_sqlite_schema >> "$OUTPUT_DIR/common/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
+sqlite3 "$SQLITE_MAIN_DB"   ".schema --indent"          | cleanup_sqlite_schema  > "$OUTPUT_DIR/main/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
+sqlite3 "$SQLITE_MAIN_DB"   ".dump --data-only --nosys" | cleanup_sqlite_schema >> "$OUTPUT_DIR/main/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
+sqlite3 "$SQLITE_STATE_DB"  ".schema --indent"          | cleanup_sqlite_schema  > "$OUTPUT_DIR/state/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
+sqlite3 "$SQLITE_STATE_DB"  ".dump --data-only --nosys" | cleanup_sqlite_schema >> "$OUTPUT_DIR/state/full_schemas/$SCHEMA_NUMBER/full.sql.sqlite"
 
 cleanup_pg_schema() {
    sed -e '/^$/d' -e '/^--/d' -e 's/public\.//g' -e '/^SET /d' -e '/^SELECT /d'
